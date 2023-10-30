@@ -1,12 +1,13 @@
 package main
 
 import (
+	"os"
+
 	"github.com/DanilaFedGit/restaurant/database"
 	"github.com/DanilaFedGit/restaurant/middleware"
 	"github.com/DanilaFedGit/restaurant/routes"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/mongo"
-	"os"
 )
 
 var foodCollection *mongo.Collection = database.OpenCollection(database.Client, "food")

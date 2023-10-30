@@ -61,10 +61,10 @@ func CreateFood() gin.HandlerFunc {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "menu wasn't found"})
 			return
 		}
-		food.Created_at = time.Parse(time.RFC3339, time.Now()).Format(time.RFC3339)
-		food.Update_at = time.Parse(time.RFC3339, time.Now()).Format(time.RFC3339)
-		food.ID = primitive.ObjectID()
-		food.Food_id = food.ID.Next()
+		food.Created_at, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
+		food.Update_at, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
+		food.ID = primitive.NewObjectID()
+		food.Food_id = food.ID.Hex()
 		var num = tofixed(*food.Price, 2)
 		food.Price = &num
 		result, err := foodCollection.InsertOne(ctx, food)
