@@ -64,9 +64,19 @@ func CreateFood() gin.HandlerFunc {
 		food.Created_at = time.Parse(time.RFC3339, time.Now()).Format(time.RFC3339)
 		food.Update_at = time.Parse(time.RFC3339, time.Now()).Format(time.RFC3339)
 		food.ID = primitive.ObjectID()
+		food.Food_id = food.ID.Next()
+		var num = tofixed(*food.Price, 2)
+		food.Price = &num
+		result, err := foodCollection.InsertOne(ctx, food)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "food wasn't created"})
+			return
+		}
+		c.JSON(http.StatusOK, result)
 
 	}
 }
+
 func round(num float64) int {
 
 }
