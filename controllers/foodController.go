@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"context"
+	"log"
 	"net/http"
 	"strconv"
 	"time"
@@ -35,9 +36,21 @@ func GetFoods() gin.HandlerFunc {
 		startIndex, err = strconv.Atoi(c.Query("startIndex"))
 		matchStage := bson.D{{"$match", bson.D{}}}
 		groupStage := bson.D{{"$group", bson.D{{"_id", bson.D{{"_id", "null"}}}, {"total_sum", bson.D{{"$sum", 1}}}}}}
-		projectStage := bson.D
-
-		var food models.Food
+		projectStage := bson.D{{"$project",bson.D{{"_id",0},{"total_count",1},{"food_items",bson.D{{"$slice",[]interface{}{"$data",startIndex,recordPerPage}}}}}}}
+		result, err:=foodCollection.Aggregate(ctx, mongo.Pipeline{
+			matchStage, groupStage, projectStage,
+		})
+		if err!=nil{
+			c.JSON(http.StatusInternalServerError,gin.H{"error":err.Error()})
+			return
+		}
+		var allFoods []bson.M
+		err = result.All(ctx,&allFoods)
+		if err!=nil{
+			log.Fatal(err)
+			return
+		}
+		c.JSON(http.StatusOK,gin.H{"data":&allFoods})
 	}
 }
 func GetFood() gin.HandlerFunc {
@@ -55,6 +68,49 @@ func GetFood() gin.HandlerFunc {
 }
 func UpdateFood() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		ctx, cancel := context.WithTimeout(context.Background(), 100*time.Second)
+		defer cancel()
+		var food models.Food
+		var menu models.Menu
+		foodid:=c.Param("food_id")
+		err := c.BindJSON(&food)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error})
+			return
+		}
+	
+		var updateObj primitive.D
+		if food.Name != "" {
+			updateObj = append(updateObj, bson.E{"name", food.Name})
+		}
+		if food.Price != "" {
+			updateObj = append(updateObj, bson.E{"category", menu.Category})
+		}
+		if food.Food_image!=nil{
+
+		}
+		if food.Menu_id!=nil{
+
+		}
+		menu.Updated_at, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
+		updateObj = append(updateObj, bson.E{"update_time", menu.Updated_at})
+		upsert := true
+		opt := options.UpdateOptions{
+			Upsert: &upsert,
+		}
+		food.Update_at,_ = time.Parse(time.RFC3339,time.Now().Format(time.RFC3339))
+		result, err := menuCollection.UpdateOne(ctx,
+			menuid,
+			bson.D{
+				{"$set", updateObj}},
+			&opt,
+		)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "update wasn't save"})
+			return
+		}
+		c.JSON(http.StatusOK, result)
+	}
 
 	}
 }

@@ -2,10 +2,11 @@ package controllers
 
 import (
 	"context"
-	"go.mongodb.org/mongo-driver/mongo/options"
 	"log"
 	"net/http"
 	"time"
+
+	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/DanilaFedGit/restaurant/models"
 	"github.com/gin-gonic/gin"
