@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"context"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"log"
 	"net/http"
 	"time"
@@ -81,7 +82,40 @@ func UpdateMenu() gin.HandlerFunc {
 			return
 		}
 		menuid := c.Param("menu_id")
-		resuly := menuCollection.FindOne(ctx, bson.M{"menu_id": menuid})
-
+		var updateObj primitive.D
+		if menu.Start_date != nil && menu.End_date != nil {
+			if !inTimeSpan(*menu.Start_date, *menu.End_date, time.Now()) {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "wrong time"})
+				return
+			}
+		}
+		updateObj = append(updateObj, bson.E{"start_date", menu.Start_date})
+		updateObj = append(updateObj, bson.E{"end_date", menu.End_date})
+		if menu.Name != "" {
+			updateObj = append(updateObj, bson.E{"name", menu.Name})
+		}
+		if menu.Category != "" {
+			updateObj = append(updateObj, bson.E{"category", menu.Category})
+		}
+		menu.Updated_at, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
+		updateObj = append(updateObj, bson.E{"update_time", menu.Updated_at})
+		upsert := true
+		opt := options.UpdateOptions{
+			Upsert: &upsert,
+		}
+		result, err := menuCollection.UpdateOne(ctx,
+			menuid,
+			bson.D{
+				{"$set", updateObj}},
+			&opt,
+		)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "update wasn't save"})
+			return
+		}
+		c.JSON(http.StatusOK, result)
 	}
+}
+func inTimeSpan(start, end, check time.Time) bool {
+	return start.After(check) && end.After(start)
 }

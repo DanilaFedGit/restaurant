@@ -3,6 +3,7 @@ package controllers
 import (
 	"context"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/DanilaFedGit/restaurant/database"
@@ -20,7 +21,23 @@ var foodCollection *mongo.Collection = database.OpenCollection(database.Client, 
 
 func GetFoods() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		ctx, cancel := context.WithTimeout(context.Background(), 100*time.Second)
+		defer cancel()
+		recordPerPage, err := strconv.Atoi(c.Query("recordPerPage"))
+		if err != nil || recordPerPage < 1 {
+			recordPerPage = 10
+		}
+		page, err := strconv.Atoi(c.Query("page"))
+		if err != nil || page < 1 {
+			page = 1
+		}
+		startIndex := (page - 1) * recordPerPage
+		startIndex, err = strconv.Atoi(c.Query("startIndex"))
+		matchStage := bson.D{{"$match", bson.D{}}}
+		groupStage := bson.D{{"$group", bson.D{{"_id", bson.D{{"_id", "null"}}}, {"total_sum", bson.D{{"$sum", 1}}}}}}
+		projectStage := bson.D
 
+		var food models.Food
 	}
 }
 func GetFood() gin.HandlerFunc {
